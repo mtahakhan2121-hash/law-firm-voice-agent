@@ -10,9 +10,21 @@ confirm rather than accept and move on.
 from pipeline.stt import TranscriptionResult
 
 # Keywords that suggest the uncertain word is part of a critical field
-_NAME_HINTS  = {"name", "called", "i'm", "im", "my"}
+_NAME_HINTS  = {"name", "called", "i'm", "im", "surname", "firstname"}
 _EMAIL_HINTS = {"@", "email", "address", "dot", "gmail", "outlook", "yahoo", "hotmail"}
-_PHONE_HINTS = {"number", "phone", "mobile", "call", "reach"}
+_PHONE_HINTS = {"number", "phone", "mobile", "reach"}
+
+# Common English words that Whisper often marks low-confidence but are never field values
+_STOP_WORDS = {
+    "and", "the", "a", "an", "i", "yes", "no", "my", "me", "you", "we",
+    "they", "it", "is", "was", "were", "are", "be", "to", "of", "in",
+    "for", "on", "at", "by", "from", "with", "that", "this", "but", "or",
+    "not", "if", "so", "do", "did", "had", "has", "have", "will", "would",
+    "could", "should", "can", "may", "might", "he", "she", "his", "her",
+    "our", "their", "there", "then", "than", "just", "also", "about",
+    "got", "get", "got", "said", "been", "very", "more", "some", "any",
+    "all", "as", "up", "out", "please", "ok", "okay", "yeah", "sure",
+}
 
 
 def build_confidence_signal(result: TranscriptionResult) -> str:
@@ -20,12 +32,22 @@ def build_confidence_signal(result: TranscriptionResult) -> str:
     Return a signal string to prepend to the user message when STT
     confidence is low on words that are likely critical fields.
 
-    Returns empty string when confidence is fine.
+    Returns empty string when confidence is fine or uncertain words
+    are only common English stop words (not field values).
     """
     if not result.uncertain_words:
         return ""
 
-    uncertain = [w.strip(".,!?") for w in result.uncertain_words]
+    # Strip punctuation then discard stop words — only flag real unknowns
+    uncertain = [
+        w.strip(".,!?-") for w in result.uncertain_words
+        if w.strip(".,!?-").lower() not in _STOP_WORDS
+        and len(w.strip(".,!?-")) > 1
+    ]
+
+    if not uncertain:
+        return ""
+
     text_lower = result.transcript.lower()
 
     # Check if uncertain words overlap with critical-field context

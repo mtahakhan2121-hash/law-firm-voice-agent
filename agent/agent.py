@@ -44,15 +44,18 @@ def _state_context(session: SessionState) -> str:
     if session.law_area:
         lines.append(f"- Law area: ALREADY IDENTIFIED as '{session.law_area}'. Do NOT call route_to_law_area again.")
     else:
-        lines.append("- Law area: not yet identified. Call route_to_law_area once you know it.")
+        lines.append(
+            "- Law area: NOT YET IDENTIFIED. You MUST call route_to_law_area before asking for any "
+            "booking details. Do not collect name, email, or phone until routing is done."
+        )
 
     if session.booking_confirmed:
-        lines.append(f"- Booking already confirmed: {session.booking_reference}. Say goodbye.")
+        lines.append(f"- Booking already confirmed: {session.booking_reference}. Say goodbye in one sentence.")
     else:
         lines.append(
-            "- To book: collect name, email, phone, and preferred slot from the caller. "
-            "Once you have all four AND the caller has confirmed them, call book_consultation immediately. "
-            "Do not ask 'shall I proceed' — just book it once the caller confirms the details are correct."
+            "- To book: collect name → email → phone → preferred slot, one field at a time. "
+            "Once all four are confirmed by the caller, call book_consultation immediately. "
+            "Do not ask permission to proceed — just call the tool."
         )
 
     # Clarification tracking — warn the model when approaching escalation limit
@@ -145,8 +148,8 @@ def respond(user_text: str, session: SessionState) -> tuple[str, float]:
             messages=messages,
             tools=TOOL_SCHEMAS,
             tool_choice="auto",
-            temperature=0.3,   # low temp for consistent, predictable responses
-            max_tokens=300,    # voice responses should be short
+            temperature=0.3,
+            max_tokens=120,    # hard cap — voice responses must be short
         )
 
         message = response.choices[0].message
@@ -213,7 +216,7 @@ def respond(user_text: str, session: SessionState) -> tuple[str, float]:
                 model=OPENAI_MODEL,
                 messages=messages,
                 temperature=0.3,
-                max_tokens=150,
+                max_tokens=80,
             )
             elapsed_ms = (time.monotonic() - t0) * 1000
             reply = final.choices[0].message.content or ""
