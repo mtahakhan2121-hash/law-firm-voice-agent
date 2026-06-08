@@ -1,0 +1,33 @@
+# Environment — never commit API keys
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Piper voice model files (large binary, download via README)
+voices/
+
+# SQLite database (regenerated on first run)
+booking.db
+
+# Generated demo audio files (regenerated via generate_demo.py)
+demo_audio/*.wav
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
